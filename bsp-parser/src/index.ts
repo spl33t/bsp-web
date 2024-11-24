@@ -1,12 +1,27 @@
-import "dotenv/config"
+import "dotenv/config";
 import "reflect-metadata";
-import { ExampleClass } from "./decorators";
+import { getMap, saveMap } from "./file-utils";
+import { parseEdges, parseHeader, parsePlanes, parseTextures, parseVertices } from "./parse-utils";
 
-const appName = "ts-node-starter"
-const SECRET_KEY = process.env.SECRET_KEY
+bspToJson("box-001.bsp")
+bspToJson("Testmap.bsp")
 
-console.log(`app started - ${appName}`)
-console.log(SECRET_KEY)
+async function bspToJson(mapName: string) {
+    const mapBuffer = await getMap(mapName);
 
-const exmpl = new ExampleClass()
-exmpl.hello()
+    const { lumps, version } = parseHeader(mapBuffer);
+
+    console.log("Версия BSP-файла:", version, lumps);
+
+    // Создаём объект для записи в JSON
+    const data = {
+        version,
+        vertices: parseVertices(mapBuffer, { length: lumps.VERTICES.size, offset: lumps.VERTICES.offset }),
+        planes: parsePlanes(mapBuffer, { length: lumps.PLANES.size, offset: lumps.PLANES.offset }),
+        edges: parseEdges(mapBuffer, { length: lumps.EDGES.size, offset: lumps.EDGES.offset }),
+        //textures
+    };
+
+    // Записываем данные в файл
+    saveMap(mapName, data)
+}
